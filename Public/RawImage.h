@@ -149,6 +149,7 @@ private:
 	unsigned int raw_count;
 	unsigned short* raw_image;
 
+	void init( int width, int height, int channel );
 	void createImageInfo( libraw_data_t* data );
 };
 

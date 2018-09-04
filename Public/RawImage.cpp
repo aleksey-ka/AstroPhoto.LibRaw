@@ -51,25 +51,22 @@ RawImage::RawImage( libraw_data_t* data )
 
 RawImage::RawImage( int width, int height, int channel, cli::array<unsigned short>^ pixels ) 
 {
-	raw_width = width;
-	raw_height = height;
-	raw_count = raw_width * raw_height;
+	init( width, height, channel );
 	raw_image = new unsigned short[raw_count];
 	System::Runtime::InteropServices::Marshal::Copy( (cli::array<short>^)( pixels ), 0, IntPtr( raw_image ), raw_count );
-	switch( channel ) {
-		case 0:	idata_filters = 0xb4b4b4b4; break;
-		case 1:	idata_filters = 0xe1e1e1e1; break;
-		case 2:	idata_filters = 0x1e1e1e1e; break;
-		case 3:	idata_filters = 0x4b4b4b4b; break;
-	}
 }
 
 RawImage::RawImage( int width, int height, int channel, unsigned short* pixels ) 
 {
+	init( width, height, channel );
+	raw_image = pixels;
+}
+
+void RawImage::init( int width, int height, int channel )
+{
 	raw_width = width;
 	raw_height = height;
 	raw_count = raw_width * raw_height;
-	raw_image = pixels;
 	switch( channel ) {
 		case 0:	idata_filters = 0xb4b4b4b4; break;
 		case 1:	idata_filters = 0xe1e1e1e1; break;
