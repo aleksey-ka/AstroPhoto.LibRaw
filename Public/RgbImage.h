@@ -10,7 +10,7 @@ ref class LImage;
 public ref class RgbImage {
 public:
 	RgbImage( int width, int height );
-	RgbImage( unsigned int* rgbPixels, unsigned width, unsigned height );
+	RgbImage( unsigned int* rgbPixels, int width, int height );
 	
 	~RgbImage();
 	
@@ -23,14 +23,14 @@ public:
 	void BackgroundLevels( LImage^ mask, [Out] int% BgR, [Out] int% BgG, [Out] int% BgB );
 
 private:
+	int width;
+	int height;
 	unsigned int* rgbPixels;
-	unsigned width;
-	unsigned height;
 };
 
 public ref class LImage {
 public:
-	LImage( unsigned int* _lPixels, unsigned _width, unsigned _height ) :
+	LImage( unsigned int* _lPixels, int _width, int _height ) :
 		lPixels( _lPixels ), width( _width ), height( _height )
 	{
 	}
@@ -46,14 +46,14 @@ public:
 
 	void MaskBackground( unsigned int maskValue, int kSigma );
 
-	Bitmap^ RenderBitmap( int max );
+	Bitmap^ RenderBitmap( unsigned int max );
 
 	unsigned int* GetPixels() { return lPixels; }
 
 private:
+	int width;
+	int height;
 	unsigned int* lPixels;
-	unsigned width;
-	unsigned height;
 };
 
 } //namespace LibRaw

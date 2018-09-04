@@ -17,8 +17,8 @@ public:
 private:
 	void renderBitmapHalfRes( unsigned char* pixels, int stride );
 	void renderBitmapHalfResSaturation( unsigned char* pixels, int stride, int saturation );
-	void renderBitmap( unsigned char* pixels, int stride, unsigned rectWidth, unsigned rectHeight );
-	void renderBitmapSaturation( unsigned char* pixels, int stride, unsigned rectWidth, unsigned rectHeight, int saturation );
+	void renderBitmap( unsigned char* pixels, int stride, int rectWidth, int rectHeight );
+	void renderBitmapSaturation( unsigned char* pixels, int stride, int rectWidth, int rectHeight, int saturation );
 
 	void copySubtractOffset( unsigned short* raw_image, const RECT& rect );
 	void filterSpikes( unsigned short* raw_image, const RECT& rect );
@@ -26,9 +26,9 @@ private:
 
 private:
 	unsigned int idata_filters;
-	unsigned short raw_width;
-	unsigned short raw_height;
-	unsigned int raw_count;
+	int raw_width;
+	int raw_height;
+	int raw_count;
 	unsigned short* raw_image;
 
 	unsigned int* rgbPixels;

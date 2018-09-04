@@ -84,8 +84,8 @@ RawImage::~RawImage()
 
 Bitmap^ RawImage::RenderBitmapHalfRes( Curve^ curve, int saturation )
 {
-	unsigned int width = raw_width / 2;
-	unsigned int height = raw_height / 2;
+	int width = raw_width / 2;
+	int height = raw_height / 2;
 
 	Bitmap^ bitmap = gcnew Bitmap( width, height, Imaging::PixelFormat::Format24bppRgb );
 	Imaging::BitmapData^ bitmapData = bitmap->LockBits( System::Drawing::Rectangle( 0, 0, width, height ),
@@ -142,17 +142,17 @@ Bitmap^ RawImage::RenderCFA( System::Drawing::Rectangle rect, Curve^ curve )
 
 Bitmap^ RawImage::GetHistogram()
 {
-	unsigned int width = raw_width;
-	unsigned int height = raw_height;
+	int width = raw_width;
+	int height = raw_height;
 
 	unsigned int max = color_maximum;
 
 	unsigned long* buf = new unsigned long[max + 1];
 	memset( buf, 0, ( max + 1 ) * sizeof( unsigned long ) );
 	
-	for( unsigned int y = 0; y < height; y++ ) {
+	for( int y = 0; y < height; y++ ) {
 		int stride = y * width;
-        for( unsigned int x = 0; x < width; x++ ) {
+        for( int x = 0; x < width; x++ ) {
 			unsigned int value = raw_image[stride + x];
 			buf[value]++;
 		}
@@ -366,7 +366,7 @@ cli::array<__int64>^ RawImage::GetRawPixelsApplyFlatDark( System::Drawing::Recta
 
 void RawImage::ApplyFlat( cli::array<unsigned short>^ pixels, int multiplier )
 {
-	for( unsigned int i = 0; i < raw_count; i++ ) {
+	for( int i = 0; i < raw_count; i++ ) {
 		int value = (int)raw_image[i] - offset;
 		int flatValue = ( ( ( value * multiplier ) * USHRT_MAX ) / pixels[i] ) + offset;
 		if( flatValue < 0 ) {
@@ -381,7 +381,7 @@ void RawImage::ApplyFlat( cli::array<unsigned short>^ pixels, int multiplier )
 
 void RawImage::ApplyDark( cli::array<unsigned short>^ pixels )
 {
-	for( unsigned int i = 0; i < raw_count; i++ ) {
+	for( int i = 0; i < raw_count; i++ ) {
 		int value = raw_image[i];
 		value -= pixels[i];
 		value += offset;

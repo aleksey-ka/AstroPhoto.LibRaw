@@ -40,17 +40,17 @@ public:
 		}
 	}
 
-	property unsigned short Height
+	property int Height
 	{
-		unsigned short get()
+		int get()
 		{ 
 			return raw_height;
 		}
 	}
 
-	property unsigned short Width
+	property int Width
 	{
-		unsigned short get()
+		int get()
 		{ 
 			return raw_width;
 		}
@@ -144,9 +144,9 @@ private:
 
 	cli::array<unsigned char>^ thumbnail_bytes;
 
-	unsigned short raw_width;
-	unsigned short raw_height;
-	unsigned int raw_count;
+	int raw_width;
+	int raw_height;
+	int raw_count;
 	unsigned short* raw_image;
 
 	void init( int width, int height, int channel );
@@ -166,8 +166,8 @@ public:
 
 private:
 	int count;
-	unsigned short width;
-	unsigned short height;
+	int width;
+	int height;
 	unsigned int* buffer;
 	unsigned short* result;
 	float* sumSqr;

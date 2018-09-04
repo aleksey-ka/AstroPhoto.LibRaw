@@ -6,7 +6,7 @@
 
 #include <Renderer.h>
 
-const unsigned offset = 128;
+const int offset = 128;
 
 Renderer::Renderer( unsigned short* _raw_image, int _raw_width, int _raw_height, unsigned int _idata_filters,
 		unsigned char* _curveR, unsigned char* _curveG, unsigned char* _curveB )
@@ -48,13 +48,13 @@ void Renderer::RenderBitmapHalfRes( unsigned char* pixels, int stride, int satur
 
 void Renderer::renderBitmapHalfRes( unsigned char* pixels, int stride )
 {
-	unsigned int width = raw_width / 2;
-	unsigned int height = raw_height / 2;
+	int width = raw_width / 2;
+	int height = raw_height / 2;
 	
-	for( unsigned int y = 0; y < height; y++ ) {
+	for( int y = 0; y < height; y++ ) {
 		int i0 = 2 * y * 2 * width;
 		int j0 = y * stride;
-		for( unsigned int x = 0; x < width; x++ ) {
+		for( int x = 0; x < width; x++ ) {
 			int i = i0 + 2 * x;
 			int _i = i + raw_width;
 			int j = j0 + 3 * x;
@@ -68,13 +68,13 @@ void Renderer::renderBitmapHalfRes( unsigned char* pixels, int stride )
 
 void Renderer::renderBitmapHalfResSaturation( unsigned char* pixels, int stride, int saturation )
 {
-	unsigned int width = raw_width / 2;
-	unsigned int height = raw_height / 2;
+	int width = raw_width / 2;
+	int height = raw_height / 2;
 
-	for( unsigned int y = 0; y < height; y++ ) {
+	for( int y = 0; y < height; y++ ) {
 		int i0 = 2 * y * 2 * width;
 		int j0 = y * stride;
-		for( unsigned int x = 0; x < width; x++ ) {
+		for( int x = 0; x < width; x++ ) {
 			int i = i0 + 2 * x;
 			int _i = i + raw_width;
 			int j = j0 + 3 * x;
@@ -118,12 +118,12 @@ void Renderer::RenderBitmap( unsigned char* pixels, int stride, const RECT& rect
 	}
 }
 
-void Renderer::renderBitmap( unsigned char* pixels, int stride, unsigned rectWidth, unsigned rectHeight )
+void Renderer::renderBitmap( unsigned char* pixels, int stride, int rectWidth, int rectHeight )
 {
-	for( unsigned int y = 0; y < rectHeight; y++ ) {
+	for( int y = 0; y < rectHeight; y++ ) {
 		int i0 = 3 * y * rectWidth;
 		int j0 = y * stride;
-		for( unsigned int x = 0; x < rectWidth; x++ ) {
+		for( int x = 0; x < rectWidth; x++ ) {
 			int _x = 3 * x;
 			int i = i0 + _x;
 			int j = j0 + _x;
@@ -134,12 +134,12 @@ void Renderer::renderBitmap( unsigned char* pixels, int stride, unsigned rectWid
 	}
 }
 
-void Renderer::renderBitmapSaturation( unsigned char* pixels, int stride, unsigned rectWidth, unsigned rectHeight, int saturation )
+void Renderer::renderBitmapSaturation( unsigned char* pixels, int stride, int rectWidth, int rectHeight, int saturation )
 {
-	for( unsigned int y = 0; y < rectHeight; y++ ) {
+	for( int y = 0; y < rectHeight; y++ ) {
 		int i0 = 3 * y * rectWidth;
 		int j0 = y * stride;
-		for( unsigned int x = 0; x < rectWidth; x++ ) {
+		for( int x = 0; x < rectWidth; x++ ) {
 			int _x = 3 * x;
 			int i = i0 + _x;
 			int j = j0 + _x;
@@ -209,13 +209,13 @@ void Renderer::filterSpikes( unsigned short* raw_image, const RECT& rect )
 {
 	// Filter spikes
 
-	unsigned rectX = rect.left;
-	unsigned rectY = rect.top;
-	unsigned rectWidth = rect.right - rect.left;
-	unsigned rectHeight = rect.bottom - rect.top;
+	int rectX = rect.left;
+	int rectY = rect.top;
+	int rectWidth = rect.right - rect.left;
+	int rectHeight = rect.bottom - rect.top;
 
-	for( unsigned int y = 0; y < rectHeight; y++ ) {
-		for( unsigned int x = 0; x < rectWidth; x++ ) {
+	for( int y = 0; y < rectHeight; y++ ) {
+		for( int x = 0; x < rectWidth; x++ ) {
 			int X = rectX + x ;
 			int Y = rectY + y;
 			int I = Y * raw_width + X;
@@ -255,10 +255,10 @@ void Renderer::filterSpikes( unsigned short* raw_image, const RECT& rect )
 
 unsigned* Renderer::calculateRgbPixelValues( unsigned short* raw_image, const RECT& rect )
 {
-	unsigned rectX = rect.left;
-	unsigned rectY = rect.top;
-	unsigned rectWidth = rect.right - rect.left;
-	unsigned rectHeight = rect.bottom - rect.top;
+	int rectX = rect.left;
+	int rectY = rect.top;
+	int rectWidth = rect.right - rect.left;
+	int rectHeight = rect.bottom - rect.top;
 	
 	// Calculate color map
 
@@ -266,8 +266,8 @@ unsigned* Renderer::calculateRgbPixelValues( unsigned short* raw_image, const RE
 	float* Cg = new float[rectWidth * rectHeight];
 	float* Cb = new float[rectWidth * rectHeight];
 	
-	for( unsigned int y = 0; y < rectHeight; y++ ) {
-		for( unsigned int x = 0; x < rectWidth; x++ ) {
+	for( int y = 0; y < rectHeight; y++ ) {
+		for( int x = 0; x < rectWidth; x++ ) {
 			int X = rectX + x;
 			int Y = rectY + y;
 			int i = y * rectWidth + x;
@@ -330,8 +330,8 @@ unsigned* Renderer::calculateRgbPixelValues( unsigned short* raw_image, const RE
 	// Calculate rgb pixel values
 
 	unsigned* rgb = new unsigned int[3 * rectWidth * rectHeight];
-	for( unsigned int y = 0; y < rectHeight; y++ ) {
-		for( unsigned int x = 0; x < rectWidth; x++ ) {
+	for( int y = 0; y < rectHeight; y++ ) {
+		for( int x = 0; x < rectWidth; x++ ) {
 			int X = rectX + x;
 			int Y = rectY + y;
 			int i = y * rectWidth + x;
@@ -442,17 +442,17 @@ void Renderer::RenderCFA( unsigned char* pixels, int stride, const RECT& rect )
 
 Bitmap^ RawImage::GetHistogram()
 {
-	unsigned int width = raw_width;
-	unsigned int height = raw_height;
+	int width = raw_width;
+	int height = raw_height;
 
 	unsigned int max = color_maximum;
 
 	unsigned long* buf = new unsigned long[max + 1];
 	memset( buf, 0, ( max + 1 ) * sizeof( unsigned long ) );
 	
-	for( unsigned int y = 0; y < height; y++ ) {
+	for( int y = 0; y < height; y++ ) {
 		int stride = y * width;
-        for( unsigned int x = 0; x < width; x++ ) {
+        for( int x = 0; x < width; x++ ) {
 			unsigned int value = raw_image[stride + x];
 			buf[value]++;
 		}
@@ -462,7 +462,7 @@ Bitmap^ RawImage::GetHistogram()
 
 	unsigned long maxBuf = 0;
 	double* values = new double[hwidth];
-	for( unsigned int x = 0; x < hwidth; x++ ) {
+	for( unsigned long int x = 0; x < hwidth; x++ ) {
 		unsigned long count = buf[x];
 		values[x] = 231.4079 * ( log( count /10.0 + 10.0 ) - 1 );
 		if( count > maxBuf ) {
@@ -511,9 +511,9 @@ void RawImage::CalcStatistics( int ch, int _x, int _y, int _width, int _height, 
 
 	double _mean = 0;
 	int N = 0;
-	for( unsigned int y = 0; y < _height ; y++ ) {
+	for( int y = 0; y < _height ; y++ ) {
 		int Y = y + _y;
-		for( unsigned int x = 0; x < _width; x++ ) {
+		for( int x = 0; x < _width; x++ ) {
 			int X = x + _x;
 			int cindex = ( idata_filters >> (((Y << 1 & 14) | (X & 1)) << 1) & 3);
 			if( cindex == ch ) {
@@ -525,9 +525,9 @@ void RawImage::CalcStatistics( int ch, int _x, int _y, int _width, int _height, 
 	_mean /= N;
 
 	double sumSqrDev = 0;
-	for( unsigned int y = 0; y < _height ; y++ ) {
+	for( int y = 0; y < _height ; y++ ) {
 		int Y = y + _y;
-		for( unsigned int x = 0; x < _width; x++ ) {
+		for( int x = 0; x < _width; x++ ) {
 			int X = x + _x;
 			int cindex = ( idata_filters >> (((Y << 1 & 14) | (X & 1)) << 1) & 3);
 			if( cindex == ch ) {

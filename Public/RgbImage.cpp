@@ -24,7 +24,7 @@ RgbImage::RgbImage( int _width, int _height ) : width( _width ), height( _height
 	memset( rgbPixels, 0, count * sizeof( unsigned int ) );
 }
 
-RgbImage::RgbImage( unsigned int* _rgbPixels, unsigned _width, unsigned _height ) :
+RgbImage::RgbImage( unsigned int* _rgbPixels, int _width, int _height ) :
 	rgbPixels( _rgbPixels ), width( _width ), height( _height )
 {
 }
@@ -95,17 +95,17 @@ LImage^ RgbImage::CreateLImage()
 	return gcnew LImage( lPixels, width, height );
 }
 
-Bitmap^ LImage::RenderBitmap( int max )
+Bitmap^ LImage::RenderBitmap( unsigned int max )
 {
 	Bitmap^ bitmap = gcnew Bitmap( width, height, Imaging::PixelFormat::Format24bppRgb );
 	Imaging::BitmapData^ bitmapData = bitmap->LockBits( System::Drawing::Rectangle( 0, 0, width, height ),
 		Imaging::ImageLockMode::WriteOnly, bitmap->PixelFormat );
 	try {
 		unsigned char* ptr = (unsigned char*)( bitmapData->Scan0.ToPointer() );
-		for( unsigned int y = 0; y < height; y++ ) {
+		for( int y = 0; y < height; y++ ) {
 			int i0 = y * width;
 			int j0 = y * bitmapData->Stride; 
-			for( unsigned int x = 0; x < width; x++ ) {
+			for( int x = 0; x < width; x++ ) {
 				int i = i0 + x;
 				int j = j0 + 3 * x;
 				unsigned int L = lPixels[i];
@@ -204,13 +204,13 @@ void LImage::MaskBackground( unsigned int maskValue, int kSigma )
 {
 	unsigned int pixelsCount = width * height;
 	
-	int maxValue = 4096;
+	unsigned int maxValue = 4096;
 	unsigned int* counts = new unsigned int[maxValue];
-	for( int i = 0; i < maxValue; i++ ) {
+	for( unsigned int i = 0; i < maxValue; i++ ) {
 		counts[i] = 0;
 	}
 
-	for( int i = 0; i < pixelsCount; i++ ) {
+	for( unsigned int i = 0; i < pixelsCount; i++ ) {
 		unsigned int value = lPixels[i];
 		if( value < maxValue ) {
 			counts[value]++;
@@ -220,7 +220,7 @@ void LImage::MaskBackground( unsigned int maskValue, int kSigma )
 	int median = -1;
 	unsigned int medianCount = -1;
 	unsigned int sum = 0;
-	for( int i = 0; i < maxValue; i++ ) {
+	for( unsigned int i = 0; i < maxValue; i++ ) {
 		sum += counts[i];
 		if( sum >= pixelsCount / 2 ) {
 			median = i;
@@ -230,7 +230,7 @@ void LImage::MaskBackground( unsigned int maskValue, int kSigma )
 	}
 	
 	int halfWidth = -1;
-	for( int i = median; i < maxValue; i++ ) {
+	for( unsigned int i = median; i < maxValue; i++ ) {
 		if( counts[i] <= medianCount / 2 ) {
 			halfWidth = i - median;
 			break;
@@ -240,7 +240,7 @@ void LImage::MaskBackground( unsigned int maskValue, int kSigma )
 	delete[] counts;
 
 	unsigned int threshold = median + kSigma * halfWidth;
-	for( int i = 0; i < pixelsCount; i++ ) {
+	for( unsigned int i = 0; i < pixelsCount; i++ ) {
 		unsigned int value = lPixels[i];
 		if( value < threshold ) {
 			lPixels[i] = maskValue;
