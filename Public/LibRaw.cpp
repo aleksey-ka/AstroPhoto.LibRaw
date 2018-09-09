@@ -15,13 +15,20 @@ namespace LibRaw {
 
 public ref class Instance {
 public: 
-	Instance() : 
-		data( libraw_init( LIBRAW_OPTIONS_NONE ) )
+	Instance() : data( libraw_init( LIBRAW_OPTIONS_NONE ) )
 	{
 		if( data == 0 ) {
 			throw gcnew Exception( "Could not initialize LibRaw" );
 		}
-		//data->params.sony_arw2_hack = 1;
+	}
+
+	~Instance()
+	{
+		if( data != nullptr ) {
+			libraw_recycle( data );
+			libraw_close( data );
+		}
+		GC::SuppressFinalize( this );
 	}
 
 	property String^ version
@@ -35,7 +42,7 @@ public:
 	RawImage^ load_raw( String^ filePath )
 	{
 		try {
-			checkResult( libraw_open_file( data, CStringA( filePath ) ) );
+			checkResult( libraw_open_wfile( data, CStringW( filePath ) ) );
 			checkResult( libraw_unpack( data ) );
 			return gcnew RawImage( data );
 		} finally {
@@ -46,7 +53,7 @@ public:
 	RawImage^ load_raw_thumbnail( String^ filePath )
 	{
 		try {
-			checkResult( libraw_open_file( data, CStringA( filePath ) ) );
+			checkResult( libraw_open_wfile( data, CStringW( filePath ) ) );
 			checkResult( libraw_unpack_thumb( data ) );
 			checkResult( libraw_unpack( data ) );
 			return gcnew RawImage( data );
@@ -58,17 +65,12 @@ public:
 	RawImage^ load_thumbnail( String^ filePath )
 	{
 		try {
-			checkResult( libraw_open_file( data, CStringA( filePath ) ) );
+			checkResult( libraw_open_wfile( data, CStringW( filePath ) ) );
 			checkResult( libraw_unpack_thumb( data ) );
 			return gcnew RawImage( data );
 		} finally {
 			libraw_recycle( data );
 		}
-	}
-
-	void recycle()
-	{
-		libraw_recycle( data );
 	}
 
 private:

@@ -19,8 +19,8 @@ public:
 	{
 		Image^ get() 
 		{
-			System::IO::Stream^ stream = gcnew System::IO::MemoryStream( thumbnail_bytes );
-			return Image::FromStream( stream );
+			System::IO::MemoryStream stream( thumbnail_bytes );
+			return Image::FromStream( %stream );
 		}
 	}
 
