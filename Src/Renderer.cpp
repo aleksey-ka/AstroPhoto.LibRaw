@@ -6,7 +6,7 @@
 
 #include <Renderer.h>
 
-const int offset = 128;
+const int offset = 512;
 
 Renderer::Renderer( unsigned short* _raw_image, int _raw_width, int _raw_height, unsigned int _idata_filters,
 		unsigned char* _curveR, unsigned char* _curveG, unsigned char* _curveB )

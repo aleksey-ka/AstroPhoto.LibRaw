@@ -132,7 +132,7 @@ LImage::LImage( cli::array<LImage^>^ layers, cli::array<int>^ thresholds )
 	for( int k = layers->Length - 2; k >= 0; k-- ) {
 		unsigned int* pixels = layers[k]->lPixels;
 		for( int i = 0; i < width * height; i++ ) {
-			int v = (int)( pixels[i] ) - 128;
+			int v = (int)( pixels[i] ) - 512;
 			if( k < levels ) {
 				int threshold = thresholds[k];
 				if( threshold == 0 || ( v > threshold || v < -threshold ) ) {
@@ -189,7 +189,7 @@ cli::array<LImage^>^ LImage::DoWaveletTransform( int count )
 			}
 		}
 		for( int i = 0; i < width * height; i++ ) {
-			pixels[i] = int( pixels[i] ) - newPixels[i] + 128;
+			pixels[i] = int( pixels[i] ) - newPixels[i] + 512;
 		}
 		layers[k] = gcnew LImage( pixels, width, height );
 		pixels = newPixels;

@@ -40,10 +40,7 @@ RawImage::RawImage( libraw_data_t* data )
 	if( data->rawdata.raw_image != 0 ) {
 		raw_count = raw_width * raw_height;
 		raw_image = new unsigned short[raw_count];
-		//memcpy( raw_image, data->rawdata.raw_image, raw_count * sizeof( unsigned short ) );
-		for( int i = 0; i < raw_count; i++ ) {
-			raw_image[i] = ( data->rawdata.raw_image[i] >> 2 );
-		}
+		memcpy( raw_image, data->rawdata.raw_image, raw_count * sizeof( unsigned short ) );
 	} else {
 		raw_image = 0;
 	}
@@ -529,9 +526,9 @@ RawImage^ RawBuffer32::GetResult()
                     }
                 }
             }
-            sum -= 128 *_count;
+            sum -= 512 *_count;
             sum /= _count;
-            raw_image[i]= (ushort)( sum + 128 );
+            raw_image[i]= (ushort)( sum + 512 );
 		}
 		unsigned short* _skipped = new unsigned short[width * height];
 		for( int i = 0; i < width * height; i++ ) {

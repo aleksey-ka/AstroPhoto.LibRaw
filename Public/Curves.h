@@ -3,7 +3,7 @@
 namespace AstroPhoto {
 namespace LibRaw {
 
-const unsigned offset = 128;
+const unsigned offset = 512;
 
 public ref class Curve abstract {
 public:
