@@ -1,3 +1,6 @@
+// (!) CLR support switched off for the whole file. Approximately 4 times faster than managed version.
+// (!) Using "#pragma unmanaged" showed unreliable results
+
 #include <atlstr.h>
 #include <ctime>
 #include <math.h>
@@ -50,7 +53,7 @@ void Renderer::renderBitmapHalfRes( unsigned char* pixels, int stride )
 {
 	int width = raw_width / 2;
 	int height = raw_height / 2;
-	
+
 	for( int y = 0; y < height; y++ ) {
 		int i0 = 2 * y * 2 * width;
 		int j0 = y * stride;
