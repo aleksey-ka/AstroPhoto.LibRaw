@@ -69,7 +69,7 @@ Curve::!Curve()
 public ref class LinearCurve : public Curve {
 public:
 	// 255 / 135 / 205
-	LinearCurve() : maxV( 255 ), Bg( 0 ), Kr( 255 ), Kg( 135 ), Kb( 245 ), BgR( 0 ), BgG( 0 ), BgB( 0 ) {}
+	LinearCurve() : maxV( 1024 ), Bg( 0 ), Kr( 255 ), Kg( 135 ), Kb( 245 ), BgR( 0 ), BgG( 0 ), BgB( 0 ) {}
 
 	void SetBg( int newValue ) { Bg = newValue; invalidate(); }
 	void SetBgRGB( int r, int g, int b ) { BgR = r; BgG = g; BgB = b; invalidate(); }

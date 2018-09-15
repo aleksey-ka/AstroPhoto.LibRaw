@@ -1,8 +1,6 @@
 // (!) CLR support switched off for the whole file. Approximately 4 times faster than managed version.
 // (!) Using "#pragma unmanaged" showed unreliable results
 
-#include <atlstr.h>
-#include <ctime>
 #include <math.h>
 
 #include <libraw.h>
