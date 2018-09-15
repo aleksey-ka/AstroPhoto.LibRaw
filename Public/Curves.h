@@ -9,12 +9,8 @@ public ref class Curve abstract {
 public:
 	Curve() : curveR( 0 ), curveG( 0 ), curveB( 0 ){}
 	
-	~Curve()
-	{
-		delete curveR;
-		delete curveG;
-		delete curveB;
-	}
+	~Curve();
+	!Curve();
 
 	unsigned char* R() 
 	{ 

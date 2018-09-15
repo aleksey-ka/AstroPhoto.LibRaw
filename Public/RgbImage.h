@@ -13,6 +13,7 @@ public:
 	RgbImage( unsigned int* rgbPixels, int width, int height );
 	
 	~RgbImage();
+	!RgbImage();
 	
 	Bitmap^ RenderBitmap( Curve^ curve, int saturation );
 

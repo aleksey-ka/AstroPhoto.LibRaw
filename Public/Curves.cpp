@@ -50,6 +50,22 @@ void gamma_curve( unsigned char *curve, int imin, int imax )
 	}
 }
 
+Curve::~Curve()
+{
+	this->!Curve();
+	GC::SuppressFinalize( this );
+}
+
+Curve::!Curve()
+{
+	delete curveR;
+	curveR = 0;
+	delete curveG;
+	curveG = 0;
+	delete curveB;
+	curveB = 0;
+}
+
 public ref class LinearCurve : public Curve {
 public:
 	// 255 / 135 / 205

@@ -74,9 +74,15 @@ void RawImage::init( int width, int height, int channel )
 
 RawImage::~RawImage()
 {
-	delete[] raw_image;
-	thumbnail_bytes = nullptr;
+	this->!RawImage();
 	GC::SuppressFinalize( this );
+}
+
+RawImage::!RawImage()
+{
+	delete[] raw_image;
+	raw_image = 0;
+	thumbnail_bytes = nullptr;
 }
 
 Bitmap^ RawImage::RenderBitmapHalfRes( Curve^ curve, int saturation )

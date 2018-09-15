@@ -24,11 +24,17 @@ public:
 
 	~Instance()
 	{
+		this->!Instance();
+		GC::SuppressFinalize( this );
+	}
+
+	!Instance()
+	{
 		if( data != nullptr ) {
 			libraw_recycle( data );
 			libraw_close( data );
+			data = nullptr;
 		}
-		GC::SuppressFinalize( this );
 	}
 
 	property String^ version

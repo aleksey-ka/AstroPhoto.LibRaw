@@ -31,7 +31,14 @@ RgbImage::RgbImage( unsigned int* _rgbPixels, int _width, int _height ) :
 
 RgbImage::~RgbImage()
 {
+	this->!RgbImage();
+	GC::SuppressFinalize( this );
+}
+
+RgbImage::!RgbImage()
+{
 	delete[] rgbPixels;
+	rgbPixels = 0;
 }
 
 Bitmap^ RgbImage::RenderBitmap( Curve^ curve, int saturation )

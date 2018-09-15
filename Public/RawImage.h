@@ -14,6 +14,7 @@ public:
 	RawImage( int width, int height, int channel, unsigned short* pixels );
 
 	~RawImage();
+	!RawImage();
 
 	property Image^ Preview
 	{
