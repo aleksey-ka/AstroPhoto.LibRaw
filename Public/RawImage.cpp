@@ -1,7 +1,9 @@
 #include <atlstr.h>
 #include <ctime>
 #include <math.h>
+#include <stdio.h>
 #include <algorithm>
+#include <assert.h>
 
 #include <libraw.h>
 
@@ -19,12 +21,25 @@ using namespace System::Runtime::InteropServices;
 namespace AstroPhoto {
 namespace LibRaw {
 
+static unsigned int idata_filters_from_channel( int channel )
+{
+	switch( channel ) {
+		case 0:	return 0xb4b4b4b4;
+		case 1:	return 0xe1e1e1e1;
+		case 2:	return 0x1e1e1e1e;
+		case 3:	return 0x4b4b4b4b;
+	}
+	assert( false );
+	return 0;
+}
+
 RawImage::RawImage( libraw_data_t* data )
 {
 	raw_width = data->sizes.raw_width;
 	raw_height = data->sizes.raw_height;
 	iso_speed = data->other.iso_speed;
 	shutter = data->other.shutter;
+	timestamp = data->other.timestamp;
 	color_maximum = data->color.maximum;
 	idata_filters = data->idata.filters;
 
@@ -46,6 +61,94 @@ RawImage::RawImage( libraw_data_t* data )
 	}
 }
 
+RawImage::RawImage( RawImage^ src, RECT rect, int channel )
+{
+	raw_width = rect.right - rect.left;
+	raw_height = rect.bottom - rect.top;
+	iso_speed = src->iso_speed;
+	shutter = src->shutter;
+	timestamp = src->timestamp;
+	color_maximum = src->color_maximum;
+	idata_filters = idata_filters_from_channel( channel );
+
+	imageInfo = src->imageInfo;
+
+	thumbnail_bytes = nullptr;
+
+	raw_count = raw_width * raw_height;
+	raw_image = new unsigned short[raw_count];
+
+	int width = raw_width;
+	int heigth = raw_height;
+	for( int i = 0; i < heigth; i++ ) {
+		unsigned short* _src = src->raw_image + ( ( rect.top + i ) * src->raw_width + rect.left );
+		unsigned short* dest = raw_image + i * width;
+		for( int j = 0; j < width; j++ ) {
+			dest[j] = _src[j];
+		}
+	}
+}
+
+struct cfa_header
+{
+	int version;
+	int raw_width;
+	int raw_height;
+	unsigned int idata_filters;
+	unsigned int color_maximum;
+	int bits_per_pixel;
+	float iso_speed;
+	float shutter;
+	time_t timestamp;
+	
+};
+
+RawImage::RawImage( String^ filePath )
+{
+	FILE* in = _wfopen( CStringW( filePath ), L"rb" );
+	
+	cfa_header header;
+	fread( &header, sizeof( cfa_header ), 1, in );
+	assert( header.version == 0 );
+	assert( header.bits_per_pixel == 16 );
+	raw_width = header.raw_width;
+	raw_height = header.raw_height;
+	idata_filters = header.idata_filters;
+	color_maximum = header.color_maximum;
+	iso_speed = header.iso_speed;
+	shutter = header.shutter;
+	timestamp = header.timestamp;
+
+	/*raw_width = 468;
+	raw_height = 468;
+	idata_filters = 0xb4b4b4b4;*/
+	
+	raw_count = raw_width * raw_height;
+	raw_image = new unsigned short[raw_count];
+	
+	fread( raw_image, sizeof( unsigned short ), raw_count, in );
+	fclose( in );
+}
+
+void RawImage::SaveCFA( String^ filePath )
+{
+	FILE* out = _wfopen( CStringW( filePath ), L"wb" );
+	cfa_header header;
+	header.version = 0;
+	header.raw_width = raw_width;
+	header.raw_height = raw_height;
+	header.idata_filters = idata_filters;
+	header.color_maximum = color_maximum;
+	header.bits_per_pixel = 16;
+	header.iso_speed = iso_speed;
+	header.shutter = shutter;
+	header.timestamp = timestamp;
+	unsigned char version = 0;
+	fwrite( &header, sizeof( header ), 1, out );
+	fwrite( raw_image, sizeof( unsigned short ), raw_count, out );
+	fclose( out );
+}
+
 RawImage::RawImage( int width, int height, int channel, cli::array<unsigned short>^ pixels ) 
 {
 	init( width, height, channel );
@@ -64,12 +167,7 @@ void RawImage::init( int width, int height, int channel )
 	raw_width = width;
 	raw_height = height;
 	raw_count = raw_width * raw_height;
-	switch( channel ) {
-		case 0:	idata_filters = 0xb4b4b4b4; break;
-		case 1:	idata_filters = 0xe1e1e1e1; break;
-		case 2:	idata_filters = 0x1e1e1e1e; break;
-		case 3:	idata_filters = 0x4b4b4b4b; break;
-	}
+	idata_filters = idata_filters_from_channel( channel );
 }
 
 RawImage::~RawImage()
@@ -94,7 +192,10 @@ Bitmap^ RawImage::RenderBitmapHalfRes( Curve^ curve, int saturation )
 	Imaging::BitmapData^ bitmapData = bitmap->LockBits( System::Drawing::Rectangle( 0, 0, width, height ),
 		Imaging::ImageLockMode::WriteOnly, bitmap->PixelFormat );
 	try {
-		Renderer renderer( raw_image, raw_width, raw_height, idata_filters, curve->R(), curve->G(), curve->B() );
+		unsigned char* curveR = curve != nullptr ? curve->R() : 0;
+		unsigned char* curveG = curve != nullptr ? curve->G() : 0;
+		unsigned char* curveB = curve != nullptr ? curve->B() : 0;
+		Renderer renderer( raw_image, raw_width, raw_height, idata_filters, curveR, curveG, curveB );
 		renderer.RenderBitmapHalfRes( (unsigned char*)( bitmapData->Scan0.ToPointer() ), bitmapData->Stride, saturation );
 	} finally {
 		bitmap->UnlockBits( bitmapData );
@@ -125,6 +226,12 @@ RgbImage^ RawImage::ExtractRgbImage( System::Drawing::Rectangle rect )
 	
 	Renderer renderer( raw_image, raw_width, raw_height, idata_filters, 0, 0, 0 );
 	return gcnew RgbImage( renderer.CalculateRgbPixelValues( r ), rect.Width, rect.Height );
+}
+
+RawImage^ RawImage::ExtractRawImage( System::Drawing::Rectangle rect )
+{
+	RECT r = { rect.Left, rect.Top, rect.Right, rect.Bottom };
+	return gcnew RawImage( this, r, Channel( r.left, r.top ) );
 }
 
 Bitmap^ RawImage::RenderCFA( System::Drawing::Rectangle rect, Curve^ curve )

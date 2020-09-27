@@ -12,6 +12,8 @@ public:
 	RawImage( libraw_data_t* data );
 	RawImage( int width, int height, int channel, cli::array<unsigned short>^ pixels );
 	RawImage( int width, int height, int channel, unsigned short* pixels );
+	RawImage( RawImage^, RECT, int channel );
+	RawImage( String^ filePath );
 
 	~RawImage();
 	!RawImage();
@@ -20,8 +22,12 @@ public:
 	{
 		Image^ get() 
 		{
-			System::IO::MemoryStream stream( thumbnail_bytes );
-			return Image::FromStream( %stream );
+			if( thumbnail_bytes != nullptr ) {
+				System::IO::MemoryStream stream( thumbnail_bytes );
+				return Image::FromStream( %stream );
+			} else {
+				return RenderBitmapHalfRes( nullptr, 0 );
+			}
 		}
 	}
 
@@ -69,7 +75,10 @@ public:
 	Bitmap^ RenderBitmap( System::Drawing::Rectangle rect, Curve^ curve, int saturation );
 	
 	RgbImage^ ExtractRgbImage( System::Drawing::Rectangle rect );
+	RawImage^ ExtractRawImage( System::Drawing::Rectangle rect );
 	Bitmap^ RenderCFA( System::Drawing::Rectangle rect, Curve^ curve );
+
+	void SaveCFA( String^ filePath );
 
 	Bitmap^ GetHistogram();
 
@@ -138,6 +147,7 @@ public:
 private:
 	float iso_speed;
 	float shutter;
+	time_t timestamp;
 	unsigned int color_maximum;
 	unsigned int idata_filters;
 

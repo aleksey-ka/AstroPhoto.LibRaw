@@ -15,8 +15,8 @@ public:
 	unsigned char* R() 
 	{ 
 		if( curveR == 0 ) {
-			curveR = new unsigned char[0x500000];
-			generateCurveR( curveR, 0x500000 );
+			curveR = new unsigned char[0x900000];
+			generateCurveR( curveR, 0x900000 );
 		}
 		return curveR; 
 	}
@@ -24,8 +24,8 @@ public:
 	unsigned char* G() 
 	{ 
 		if( curveG == 0 ) {
-			curveG = new unsigned char[0x500000];
-			generateCurveG( curveG, 0x500000 );
+			curveG = new unsigned char[0x900000];
+			generateCurveG( curveG, 0x900000 );
 		}
 		return curveG; 
 	}
@@ -33,8 +33,8 @@ public:
 	unsigned char* B() 
 	{ 
 		if( curveB == 0 ) {
-			curveB = new unsigned char[0x500000];
-			generateCurveB( curveB, 0x500000 );
+			curveB = new unsigned char[0x900000];
+			generateCurveB( curveB, 0x900000 );
 		}
 		return curveB; 
 	}

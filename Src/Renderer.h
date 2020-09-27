@@ -16,6 +16,7 @@ public:
 
 private:
 	void renderBitmapHalfRes( unsigned char* pixels, int stride );
+	void renderBitmapHalfResNoCurve( unsigned char* pixels, int stride );
 	void renderBitmapHalfResSaturation( unsigned char* pixels, int stride, int saturation );
 	void renderBitmap( unsigned char* pixels, int stride, int rectWidth, int rectHeight );
 	void renderBitmapSaturation( unsigned char* pixels, int stride, int rectWidth, int rectHeight, int saturation );

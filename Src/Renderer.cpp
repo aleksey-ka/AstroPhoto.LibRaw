@@ -40,7 +40,9 @@ Renderer::Renderer( unsigned int* _rgbPixels, unsigned char* _curveR, unsigned c
 
 void Renderer::RenderBitmapHalfRes( unsigned char* pixels, int stride, int saturation )
 {
-	if( saturation == 0 ) {
+	if( curveR == 0 ) {
+		renderBitmapHalfResNoCurve( pixels, stride );
+	} else if( saturation == 0 ) {
 		renderBitmapHalfRes( pixels, stride );
 	} else {
 		renderBitmapHalfResSaturation( pixels, stride, saturation );
@@ -52,6 +54,8 @@ void Renderer::renderBitmapHalfRes( unsigned char* pixels, int stride )
 	int width = raw_width / 2;
 	int height = raw_height / 2;
 
+	int cindex = ( idata_filters >> (((0 << 1 & 14) | (0 & 1)) << 1) & 3);
+
 	for( int y = 0; y < height; y++ ) {
 		int i0 = 2 * y * 2 * width;
 		int j0 = y * stride;
@@ -60,9 +64,90 @@ void Renderer::renderBitmapHalfRes( unsigned char* pixels, int stride )
 			int _i = i + raw_width;
 			int j = j0 + 3 * x;
 
-			pixels[j + 0] = curveB[raw_image[_i + 1]];
-			pixels[j + 1] = curveG[( raw_image[i + 1] + raw_image[_i] ) / 2];
-			pixels[j + 2] = curveR[raw_image[i]];
+			unsigned short B;
+			unsigned short G;
+			unsigned short R;
+			switch( cindex ) {
+				case 0:
+					B = raw_image[_i + 1];
+					G = ( raw_image[i + 1] + raw_image[_i] ) / 2;
+					R = raw_image[i];
+					break;
+				case 1:
+					B = raw_image[_i];
+					G = ( raw_image[i] + raw_image[_i + 1] ) / 2;
+					R = raw_image[i + 1];
+					break;
+				case 2:
+					B = raw_image[i];
+					G = ( raw_image[i + 1] + raw_image[_i] ) / 2;
+					R = raw_image[_i + 1];
+					break;
+				case 3:
+					B = raw_image[i + 1];
+					G = ( raw_image[i] + raw_image[_i + 1] ) / 2;
+					R = raw_image[_i];
+					break;
+			}
+			pixels[j + 0] = curveB[B];
+			pixels[j + 1] = curveG[G];
+			pixels[j + 2] = curveR[R];
+		}
+	}
+}
+
+void Renderer::renderBitmapHalfResNoCurve( unsigned char* pixels, int stride )
+{
+	int width = raw_width / 2;
+	int height = raw_height / 2;
+
+	int cindex = ( idata_filters >> (((0 << 1 & 14) | (0 & 1)) << 1) & 3);
+
+	for( int y = 0; y < height; y++ ) {
+		int i0 = 2 * y * 2 * width;
+		int j0 = y * stride;
+		for( int x = 0; x < width; x++ ) {
+			int i = i0 + 2 * x;
+			int _i = i + raw_width;
+			int j = j0 + 3 * x;
+
+			unsigned short uB;
+			unsigned short uG;
+			unsigned short uR;
+			switch( cindex ) {
+				case 0:
+					uB = raw_image[_i + 1];
+					uG = ( raw_image[i + 1] + raw_image[_i] ) / 2;
+					uR = raw_image[i];
+					break;
+				case 1:
+					uB = raw_image[_i];
+					uG = ( raw_image[i] + raw_image[_i + 1] ) / 2;
+					uR = raw_image[i + 1];
+					break;
+				case 2:
+					uB = raw_image[i];
+					uG = ( raw_image[i + 1] + raw_image[_i] ) / 2;
+					uR = raw_image[_i + 1];
+					break;
+				case 3:
+					uB = raw_image[i + 1];
+					uG = ( raw_image[i] + raw_image[_i + 1] ) / 2;
+					uR = raw_image[_i];
+					break;
+			}
+
+			int R = 320 * ( uR - offset ) / 255 / 4;
+			int G = ( 135 * ( uG - offset ) ) / 255 / 4;
+			int B = ( 245 * ( uB - offset ) ) / 255 / 4;
+
+			R = R > 255 ? 255 : ( R > 0 ? R : 0 );
+			G = G > 255 ? 255 : ( G > 0 ? G : 0 );
+			B = B > 255 ? 255 : ( B > 0 ? B : 0 );
+
+			pixels[j + 0] = B;
+			pixels[j + 1] = G;
+			pixels[j + 2] = R;
 		}
 	}
 }
@@ -103,14 +188,20 @@ void Renderer::renderBitmapHalfResSaturation( unsigned char* pixels, int stride,
 
 void Renderer::RenderBitmap( unsigned char* pixels, int stride, const RECT& rect, int saturation )
 {
+	RECT r;
+	r.left = rect.left >= 2 ? rect.left : 2;
+	r.top = rect.top >= 2 ? rect.top : 2;
+	r.right = ( raw_width - rect.right ) >= 2 ? rect.right : raw_width - 2;
+	r.bottom = ( raw_height - rect.bottom ) >= 2 ? rect.bottom : raw_height - 2;
+	
 	if( raw_image != 0 ) {
-		rgbPixels = CalculateRgbPixelValues( rect );
+		rgbPixels = CalculateRgbPixelValues( r );
 	}
 
 	if( saturation == 0 ) {
-		renderBitmap( pixels, stride, rect.right - rect.left, rect.bottom - rect.top );
+		renderBitmap( pixels, stride, r.right - r.left, r.bottom - r.top );
 	} else {
-		renderBitmapSaturation( pixels, stride, rect.right - rect.left, rect.bottom - rect.top, saturation );
+		renderBitmapSaturation( pixels, stride, r.right - r.left, r.bottom - r.top, saturation );
 	}
 	
 	if( raw_image != 0 ) {
@@ -121,6 +212,7 @@ void Renderer::RenderBitmap( unsigned char* pixels, int stride, const RECT& rect
 
 void Renderer::renderBitmap( unsigned char* pixels, int stride, int rectWidth, int rectHeight )
 {
+	int width = min( rectWidth, raw_width - 1 );
 	for( int y = 0; y < rectHeight; y++ ) {
 		int i0 = 3 * y * rectWidth;
 		int j0 = y * stride;
@@ -183,18 +275,24 @@ unsigned short* Renderer::ExtractFiltered( const RECT& rect )
 {
 	unsigned short* _raw_image = new unsigned short[raw_width * raw_height];
 
-	copySubtractOffset( _raw_image, rect );
-	filterSpikes( _raw_image, rect );
+	RECT r;
+	r.left = rect.left >= 2 ? rect.left : 2;
+	r.top = rect.top >= 2 ? rect.top : 2;
+	r.right = ( raw_width - rect.right ) >= 2 ? rect.right : raw_width - 2;
+	r.bottom = ( raw_height - rect.bottom ) >= 2 ? rect.bottom : raw_height - 2;
+
+	copySubtractOffset( _raw_image, r );
+	filterSpikes( _raw_image, r );
 
 	return _raw_image;
 }
 
 void Renderer::copySubtractOffset( unsigned short* raw_image, const RECT& rect )
 {
-	int rectX = rect.left - 2;
-	int rectY = rect.top - 2;
-	int rectRight = rect.right + 2;
-	int rectBottom = rect.bottom + 2;
+	int rectX = rect.left;
+	int rectY = rect.top;
+	int rectRight = rect.right;
+	int rectBottom = rect.bottom;
 	
 	for( int y = rectY; y < rectBottom; y++ ) {
 		int stride = y * raw_width; 
