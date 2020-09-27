@@ -162,6 +162,7 @@ private:
 
 	void init( int width, int height, int channel );
 	void createImageInfo( libraw_data_t* data );
+	void createImageInfo();
 };
 
 public ref class RawBuffer32 {

@@ -100,7 +100,6 @@ struct cfa_header
 	float iso_speed;
 	float shutter;
 	time_t timestamp;
-	
 };
 
 RawImage::RawImage( String^ filePath )
@@ -119,9 +118,7 @@ RawImage::RawImage( String^ filePath )
 	shutter = header.shutter;
 	timestamp = header.timestamp;
 
-	/*raw_width = 468;
-	raw_height = 468;
-	idata_filters = 0xb4b4b4b4;*/
+	createImageInfo();
 	
 	raw_count = raw_width * raw_height;
 	raw_image = new unsigned short[raw_count];
@@ -348,6 +345,20 @@ void RawImage::CalcStatistics( int ch, int _x, int _y, int _width, int _height, 
 	}
 	mean = _mean;
 	sigma = sqrt( sumSqrDev / ( N - 1 ) );
+}
+
+void RawImage::createImageInfo()
+{ 
+	char buf[1000];
+	std::string str;
+
+	sprintf( buf, "ISO%.0f - %f s\n", iso_speed, shutter );
+	str += buf;
+	time_t t = timestamp;
+	strftime( buf, sizeof( buf ), "TIMESTAMP: %d-%m-%Y %H:%M:%S\n", localtime( &t ) );		
+	str += buf;
+
+	imageInfo = gcnew String( str.c_str() );
 }
 
 void RawImage::createImageInfo( libraw_data_t* data )
