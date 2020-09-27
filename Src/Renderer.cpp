@@ -188,13 +188,14 @@ void Renderer::renderBitmapHalfResSaturation( unsigned char* pixels, int stride,
 
 void Renderer::RenderBitmap( unsigned char* pixels, int stride, const RECT& rect, int saturation )
 {
-	RECT r;
-	r.left = rect.left >= 2 ? rect.left : 2;
-	r.top = rect.top >= 2 ? rect.top : 2;
-	r.right = ( raw_width - rect.right ) >= 2 ? rect.right : raw_width - 2;
-	r.bottom = ( raw_height - rect.bottom ) >= 2 ? rect.bottom : raw_height - 2;
-	
+	RECT r = { rect.left, rect.top, rect.right, rect.bottom };;
+
 	if( raw_image != 0 ) {
+		r.left = rect.left >= 2 ? rect.left : 2;
+		r.top = rect.top >= 2 ? rect.top : 2;
+		r.right = raw_width == 0 || ( raw_width - rect.right ) >= 2 ? rect.right : raw_width - 2;
+		r.bottom = raw_height == 0 || ( raw_height - rect.bottom ) >= 2 ? rect.bottom : raw_height - 2;
+
 		rgbPixels = CalculateRgbPixelValues( r );
 	}
 
