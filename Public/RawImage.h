@@ -159,6 +159,11 @@ private:
 	int raw_height;
 	int raw_count;
 	unsigned short* raw_image;
+	
+	int source_rect_left;
+	int source_rect_top;
+	int source_rect_right;
+	int source_rect_bottom;
 
 	void init( int width, int height, int channel );
 	void createImageInfo( libraw_data_t* data );

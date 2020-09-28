@@ -5,6 +5,11 @@
 #include <algorithm>
 #include <assert.h>
 
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <map>
+
 #include <libraw.h>
 
 #using "mscorlib.dll"
@@ -42,6 +47,11 @@ RawImage::RawImage( libraw_data_t* data )
 	timestamp = data->other.timestamp;
 	color_maximum = data->color.maximum;
 	idata_filters = data->idata.filters;
+	
+	source_rect_left = 0;
+	source_rect_top = 0;
+	source_rect_right = 0;
+	source_rect_bottom = 0;
 
 	createImageInfo( data );
 	
@@ -71,6 +81,11 @@ RawImage::RawImage( RawImage^ src, RECT rect, int channel )
 	color_maximum = src->color_maximum;
 	idata_filters = idata_filters_from_channel( channel );
 
+	source_rect_left = rect.left;
+	source_rect_top = rect.top;
+	source_rect_right = rect.right;
+	source_rect_bottom = rect.bottom;
+
 	imageInfo = src->imageInfo;
 
 	thumbnail_bytes = nullptr;
@@ -89,59 +104,65 @@ RawImage::RawImage( RawImage^ src, RECT rect, int channel )
 	}
 }
 
-struct cfa_header
-{
-	int version;
-	int raw_width;
-	int raw_height;
-	unsigned int idata_filters;
-	unsigned int color_maximum;
-	int bits_per_pixel;
-	float iso_speed;
-	float shutter;
-	time_t timestamp;
-};
-
 RawImage::RawImage( String^ filePath )
 {
-	FILE* in = _wfopen( CStringW( filePath ), L"rb" );
+	CStringW infoFilePath( filePath );
+	infoFilePath.Replace( L".cfa", L".info" );
+
+	std::map<std::wstring, std::wstring> map;
 	
-	cfa_header header;
-	fread( &header, sizeof( cfa_header ), 1, in );
-	assert( header.version == 0 );
-	assert( header.bits_per_pixel == 16 );
-	raw_width = header.raw_width;
-	raw_height = header.raw_height;
-	idata_filters = header.idata_filters;
-	color_maximum = header.color_maximum;
-	iso_speed = header.iso_speed;
-	shutter = header.shutter;
-	timestamp = header.timestamp;
+	std::wifstream info( infoFilePath );
+	std::wstring line; 
+	while( std::getline( info, line ) ) {
+		size_t pos = line.find_first_of( L" \t" );
+		assert( pos != std::wstring::npos );
+		map.insert( std::pair<std::wstring, std::wstring>( 
+			line.substr( 0, pos ),
+			line.substr( pos + 1 ) ) );
+	}
+	info.close();
+
+	int bits_per_pixel;
+	swscanf( map[L"bits_per_pixel"].c_str(), L"%d", &bits_per_pixel );
+	assert( bits_per_pixel == 16 );
+	swscanf( map[L"raw_width"].c_str(), L"%d", &raw_width );
+	swscanf( map[L"raw_height"].c_str(), L"%d", &raw_height );
+	swscanf( map[L"idata_filters"].c_str(), L"%X", &idata_filters );
+	swscanf( map[L"color_maximum"].c_str(), L"%u", &color_maximum );
+	swscanf( map[L"iso_speed"].c_str(), L"%f", &iso_speed );
+	swscanf( map[L"shutter"].c_str(), L"%f", &shutter );
+	swscanf( map[L"timestamp"].c_str(), L"%I64d", &timestamp );
+	swscanf( map[L"source_rect"].c_str(), L"%d,%d,%d,%d", &source_rect_left, 
+		&source_rect_top, &source_rect_right, &source_rect_bottom );
 
 	createImageInfo();
 	
 	raw_count = raw_width * raw_height;
 	raw_image = new unsigned short[raw_count];
-	
+
+	FILE* in = _wfopen( CStringW( filePath ), L"rb" );	
 	fread( raw_image, sizeof( unsigned short ), raw_count, in );
 	fclose( in );
 }
 
 void RawImage::SaveCFA( String^ filePath )
 {
+	CStringW infoFilePath( filePath );
+	infoFilePath.Replace( L".cfa", L".info" );
+	FILE* info = _wfopen( infoFilePath, L"wt" );
+	fwprintf( info, L"raw_width %d\n", raw_width );
+	fwprintf( info, L"raw_height %d\n", raw_height );
+	fwprintf( info, L"bits_per_pixel 16\n" );
+	fwprintf( info, L"idata_filters %x\n", idata_filters );
+	fwprintf( info, L"color_maximum %u\n", color_maximum );
+	fwprintf( info, L"iso_speed %f\n", iso_speed );
+	fwprintf( info, L"shutter %f\n", shutter );
+	fwprintf( info, L"timestamp %I64d\n", timestamp );
+	fwprintf( info, L"source_rect %d,%d,%d,%d\n", source_rect_left,
+		source_rect_top, source_rect_right, source_rect_bottom );
+	fclose( info );
+
 	FILE* out = _wfopen( CStringW( filePath ), L"wb" );
-	cfa_header header;
-	header.version = 0;
-	header.raw_width = raw_width;
-	header.raw_height = raw_height;
-	header.idata_filters = idata_filters;
-	header.color_maximum = color_maximum;
-	header.bits_per_pixel = 16;
-	header.iso_speed = iso_speed;
-	header.shutter = shutter;
-	header.timestamp = timestamp;
-	unsigned char version = 0;
-	fwrite( &header, sizeof( header ), 1, out );
 	fwrite( raw_image, sizeof( unsigned short ), raw_count, out );
 	fclose( out );
 }
