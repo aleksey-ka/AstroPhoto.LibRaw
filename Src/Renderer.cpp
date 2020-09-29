@@ -327,7 +327,7 @@ void Renderer::filterSpikes( unsigned short* raw_image, const RECT& rect )
 				case 2:
 					C = raw_image[I - 2] + raw_image[I + 2] +
 						raw_image[I - 2 * raw_width] + raw_image[I + 2 * raw_width];
-					if( raw_image[I] > 2 * C ) {
+					if( raw_image[I] > C ) {
 						//unsigned G = raw_image[I - 2] + raw_image[I + 2] + 
 						//	raw_image[I - raw_width] + raw_image[I + raw_width];
 						//if( C > G / 2 ) {
