@@ -66,6 +66,24 @@ void RgbImage::Add( RgbImage^ rgbImage )
 	}
 }
 
+cli::array<unsigned short>^ RgbImage::GetRgbPixels16()
+{
+	cli::array<unsigned short>^ pixels = gcnew cli::array<unsigned short>( height * 3 * width );
+	std::vector<unsigned short> buf;
+	buf.resize( 3 * width );
+	unsigned short* line = &buf.front();
+	for( int y = 0; y < height; y++ ) {
+		unsigned int* src = rgbPixels + 3 * width * y;
+		for( int i = 0; i < 3 * width; i++ ) {
+			line[i] = src[i];
+		}
+		int destinationIndex = y * 3 * width;
+		System::Runtime::InteropServices::Marshal::Copy( IntPtr( line ), 
+			(cli::array<short>^)( pixels ), destinationIndex, 3 * width );
+	}
+	return pixels;
+}
+
 void RgbImage::BackgroundLevels( LImage^ _mask, [Out] int% BgR, [Out] int% BgG, [Out] int% BgB )
 {
 	unsigned int* mask = _mask->GetPixels();

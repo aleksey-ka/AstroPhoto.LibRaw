@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Curves.h>
+#include <vector>
 
 namespace AstroPhoto {
 namespace LibRaw {
@@ -14,10 +15,16 @@ public:
 	
 	~RgbImage();
 	!RgbImage();
+
+	property int Height	{ int get() { return height; } }
+
+	property int Width { int get() { return width; } }
 	
 	Bitmap^ RenderBitmap( Curve^ curve, int saturation );
 
 	void Add( RgbImage^ rgbImage );
+
+	cli::array<unsigned short>^ GetRgbPixels16();
 
 	LImage^ CreateLImage();
 
