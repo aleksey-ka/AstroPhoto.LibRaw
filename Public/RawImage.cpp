@@ -38,6 +38,29 @@ static unsigned int idata_filters_from_channel( int channel )
 	return 0;
 }
 
+static unsigned int idata_filters_from_pattern( const char* pattern )
+{
+	switch( pattern[0] ) {
+		case 'R' : return 0xb4b4b4b4; // RGGB
+		case 'B' : return 0x1e1e1e1e; // BGGR
+		case 'G' : return pattern[1] == 'R' ? 0xe1e1e1e1 : 0x4b4b4b4b; // GRBG GBRG
+	}
+	assert( false );
+	return 0;
+}
+
+static const char* pattern_from_idata_filters( unsigned int idata_filters )
+{
+	switch( idata_filters ) {
+		case 0xb4b4b4b4: return "RGGB";
+		case 0xe1e1e1e1: return "GRBG";
+		case 0x1e1e1e1e: return "BGGR";
+		case 0x4b4b4b4b: return "GBRG";
+	}
+	assert( false );
+	return 0;
+}
+
 RawImage::RawImage( libraw_data_t* data )
 {
 	raw_width = data->sizes.raw_width;
@@ -104,45 +127,167 @@ RawImage::RawImage( RawImage^ src, RECT rect, int channel )
 	}
 }
 
-RawImage::RawImage( String^ filePath )
+RawImage::RawImage( String^ _filePath )
 {
-	CStringW infoFilePath( filePath );
-	infoFilePath.Replace( L".cfa", L".info" );
+	CStringW filePath( _filePath );
+	CStringW ext = filePath.Mid( filePath.ReverseFind( L'.' ) ).MakeLower();
+	if( ext == L".cfa" ) {
+		CStringW infoFilePath( filePath );
+		infoFilePath.Replace( L".cfa", L".info" );
 
-	std::map<std::wstring, std::wstring> map;
-	
-	std::wifstream info( infoFilePath );
-	std::wstring line; 
-	while( std::getline( info, line ) ) {
-		size_t pos = line.find_first_of( L" \t" );
-		assert( pos != std::wstring::npos );
-		map.insert( std::pair<std::wstring, std::wstring>( 
-			line.substr( 0, pos ),
-			line.substr( pos + 1 ) ) );
+		std::map<std::wstring, std::wstring> map;
+		
+		std::wifstream info( infoFilePath );
+		std::wstring line; 
+		while( std::getline( info, line ) ) {
+			size_t pos = line.find_first_of( L" \t" );
+			assert( pos != std::wstring::npos );
+			map.insert( std::pair<std::wstring, std::wstring>( 
+				line.substr( 0, pos ),
+				line.substr( pos + 1 ) ) );
+		}
+		info.close();
+
+		int bits_per_pixel;
+		swscanf( map[L"BITS_PER_PIXEL"].c_str(), L"%d", &bits_per_pixel );
+		assert( bits_per_pixel == 16 );
+		swscanf( map[L"WIDTH"].c_str(), L"%d", &raw_width );
+		swscanf( map[L"HEIGHT"].c_str(), L"%d", &raw_height );
+		swscanf( map[L"ISO"].c_str(), L"%f", &iso_speed );
+		swscanf( map[L"EXPOSURE"].c_str(), L"%f", &shutter );
+		swscanf( map[L"TIMESTAMP"].c_str(), L"%I64d", &timestamp );
+		swscanf( map[L"SOURCE_RECT"].c_str(), L"%d,%d,%d,%d", &source_rect_left, 
+			&source_rect_top, &source_rect_right, &source_rect_bottom );
+
+		char pattern[5];
+		swscanf( map[L"PATTERN"].c_str(), L"%S", &pattern );
+		idata_filters = idata_filters_from_pattern( pattern );
+
+		createImageInfo();
+		
+		raw_count = raw_width * raw_height;
+		raw_image = new unsigned short[raw_count];
+
+		FILE* in = _wfopen( filePath, L"rb" );	
+		fread( raw_image, sizeof( unsigned short ), raw_count, in );
+		fclose( in );
+	} else {
+		assert( ext == ".fit" );
+		FILE* in = _wfopen( filePath, L"rb" );
+
+		std::map<std::string, std::string> map;
+		for( int i = 0; i < 36; i++ ) {
+			char buf[81];
+			buf[80] = 0;
+			fread( buf, sizeof( char ), 80, in );
+			
+			std::string line( buf );
+
+			if( line.rfind( "COMMENT", 0 ) == 0 || 
+				line.rfind( "HISTORY", 0 ) == 0 ||
+				line.rfind( "END", 0 ) == 0 ) {
+				continue;
+			}
+			if( line.find_first_not_of( " " ) == std::string::npos ) {
+				continue;
+			}
+
+			size_t pos = line.find( "=" );
+			assert( pos != std::string::npos );
+
+			size_t pos1 = line.find_last_not_of( " ", pos - 1 );
+			size_t pos2 = line.find_first_not_of( " ", pos + 1 );
+			size_t pos3 = line.find_first_of( "/", pos + 1 );
+			if( pos3 != std::string::npos ) {
+				pos3 = line.find_last_not_of( " ", pos3 - 1 );
+			} else {
+				pos3 = line.find_last_not_of( " " );
+			}
+			
+			map.insert( std::pair<std::string, std::string>( 
+				line.substr( 0, pos1 + 1 ),
+				line.substr( pos2, pos3 - pos2 + 1 ) ) );
+		}
+
+		assert( map["SIMPLE"] == "T" );
+
+		int bits_per_pixel;
+		sscanf( map["BITPIX"].c_str(), "%d", &bits_per_pixel );
+		assert( bits_per_pixel == 16 );
+
+		int naxis;
+		sscanf( map["NAXIS"].c_str(), "%d", &naxis );
+		assert( naxis == 2 );
+
+		sscanf( map["NAXIS1"].c_str(), "%d", &raw_width );
+		sscanf( map["NAXIS2"].c_str(), "%d", &raw_height );
+
+		int bzero;
+		sscanf( map["BZERO"].c_str(), "%d", &bzero );
+		int bscale;
+		sscanf( map["BSCALE"].c_str(), "%d", &bscale );
+		assert( bscale == 1 );
+
+		sscanf( map["EXPOSURE"].c_str(), "%f", &shutter );
+		sscanf( map["GAIN"].c_str(), "%f", &iso_speed );
+
+		idata_filters = idata_filters_from_pattern( "RGGB" );
+		timestamp = 0;
+		source_rect_left = 0; 
+		source_rect_top = 0;
+		source_rect_right = 0;
+		source_rect_bottom = 0;
+
+		raw_count = raw_width * raw_height;
+		raw_image = new unsigned short[raw_count];
+
+		fread( raw_image, sizeof( unsigned short ), raw_count, in );
+		fclose( in );
+
+		unsigned char* ptr = (unsigned char*)raw_image;
+		for( int i = 0; i < raw_count * 2; i += 2 ) {
+			std::swap( ptr[i], ptr[i + 1] );
+		}
+		for( int y = 0; y < raw_height; y++ ) {
+			for( int x = 0; x < raw_width; x++ ) {
+				int i = y * raw_width + x;
+				raw_image[i] += bzero;
+				raw_image[i] -= 200;
+				if( y % 2 == 0 ) {
+					if( x % 2 == 0 ) {
+						raw_image[i] /= 75; // R
+					} else {
+						raw_image[i] /= 48; // G
+					}
+				} else {
+					if( x % 2 == 0 ) {
+						raw_image[i] /= 48; // G
+					} else {
+						raw_image[i] /= 55; // B
+					}
+				}
+				raw_image[i] += 512;
+			}
+		}
 	}
-	info.close();
+}
 
-	int bits_per_pixel;
-	swscanf( map[L"bits_per_pixel"].c_str(), L"%d", &bits_per_pixel );
-	assert( bits_per_pixel == 16 );
-	swscanf( map[L"raw_width"].c_str(), L"%d", &raw_width );
-	swscanf( map[L"raw_height"].c_str(), L"%d", &raw_height );
-	swscanf( map[L"idata_filters"].c_str(), L"%X", &idata_filters );
-	swscanf( map[L"color_maximum"].c_str(), L"%u", &color_maximum );
-	swscanf( map[L"iso_speed"].c_str(), L"%f", &iso_speed );
-	swscanf( map[L"shutter"].c_str(), L"%f", &shutter );
-	swscanf( map[L"timestamp"].c_str(), L"%I64d", &timestamp );
-	swscanf( map[L"source_rect"].c_str(), L"%d,%d,%d,%d", &source_rect_left, 
-		&source_rect_top, &source_rect_right, &source_rect_bottom );
-
-	createImageInfo();
-	
-	raw_count = raw_width * raw_height;
-	raw_image = new unsigned short[raw_count];
-
-	FILE* in = _wfopen( CStringW( filePath ), L"rb" );	
-	fread( raw_image, sizeof( unsigned short ), raw_count, in );
-	fclose( in );
+void fwprintf_no_trailing_zeroes( FILE* file, const wchar_t* name, float value )
+{
+	char buf[50];
+	sprintf_s( buf, sizeof( buf ), "%f", value );
+	int pos = strlen( buf );
+	for( int i = pos - 1; i > 0; i-- ) {
+		if( buf[i] == '.' ) {
+			buf[i] = 0;
+			break;
+		}
+		if( buf[i] != '0' ) {
+			buf[i + 1] = 0;
+			break;
+		}
+	}
+	fwprintf( file, L"%s %S\n", name, buf );
 }
 
 void RawImage::SaveCFA( String^ filePath )
@@ -150,16 +295,18 @@ void RawImage::SaveCFA( String^ filePath )
 	CStringW infoFilePath( filePath );
 	infoFilePath.Replace( L".cfa", L".info" );
 	FILE* info = _wfopen( infoFilePath, L"wt" );
-	fwprintf( info, L"raw_width %d\n", raw_width );
-	fwprintf( info, L"raw_height %d\n", raw_height );
-	fwprintf( info, L"bits_per_pixel 16\n" );
-	fwprintf( info, L"idata_filters %x\n", idata_filters );
-	fwprintf( info, L"color_maximum %u\n", color_maximum );
-	fwprintf( info, L"iso_speed %f\n", iso_speed );
-	fwprintf( info, L"shutter %f\n", shutter );
-	fwprintf( info, L"timestamp %I64d\n", timestamp );
-	fwprintf( info, L"source_rect %d,%d,%d,%d\n", source_rect_left,
+	fwprintf( info, L"WIDTH %d\n", raw_width );
+	fwprintf( info, L"HEIGHT %d\n", raw_height );
+	fwprintf( info, L"BITS_PER_PIXEL 16\n" );
+	fwprintf( info, L"OFFSET 512\n" );
+	fwprintf( info, L"PATTERN %S\n", pattern_from_idata_filters( idata_filters ) );
+	fwprintf_no_trailing_zeroes( info, L"ISO", iso_speed );
+	fwprintf_no_trailing_zeroes( info, L"EXPOSURE", shutter );
+	fwprintf( info, L"TIMESTAMP %I64d\n", timestamp );
+	fwprintf( info, L"SOURCE_RECT %d,%d,%d,%d\n", source_rect_left,
 		source_rect_top, source_rect_right, source_rect_bottom );
+	fwprintf( info, L"SOURCE_FORMAT ARW\n" );
+	fwprintf( info, L"CAMERA Sony NEX-5N\n" );
 	fclose( info );
 
 	FILE* out = _wfopen( CStringW( filePath ), L"wb" );
@@ -277,10 +424,10 @@ Bitmap^ RawImage::GetHistogram()
 
 	unsigned long* buf = new unsigned long[max + 1];
 	memset( buf, 0, ( max + 1 ) * sizeof( unsigned long ) );
-	
+
 	for( int y = 0; y < height; y++ ) {
 		int stride = y * width;
-        for( int x = 0; x < width; x++ ) {
+		for( int x = 0; x < width; x++ ) {
 			unsigned int value = raw_image[stride + x];
 			buf[value]++;
 		}

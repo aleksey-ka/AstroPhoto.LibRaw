@@ -74,8 +74,16 @@ cli::array<unsigned short>^ RgbImage::GetRgbPixels16()
 	unsigned short* line = &buf.front();
 	for( int y = 0; y < height; y++ ) {
 		unsigned int* src = rgbPixels + 3 * width * y;
-		for( int i = 0; i < 3 * width; i++ ) {
-			line[i] = src[i];
+		for( int i = 0; i < 3 * width; i += 3 ) {
+			unsigned int uB = src[ i + 0];
+			unsigned int uG = src[ i + 1];
+			unsigned int uR = src[ i + 2];
+			int R = ( 20 * 320 * ( uR ) ) / 255;
+			int G = ( 20 * 135 * ( uG ) ) / 255;
+			int B = ( 20 * 245 * ( uB ) ) / 255;
+			line[i + 0] = B;
+			line[i + 1] = G;
+			line[i + 2] = R;
 		}
 		int destinationIndex = y * 3 * width;
 		System::Runtime::InteropServices::Marshal::Copy( IntPtr( line ), 
